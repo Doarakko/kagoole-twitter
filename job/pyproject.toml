@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "job"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+kaggle = "^1.5.12"
+python-dotenv = "^1.0.0"
+tweepy = "^4.12.1"
+google-crc32c = "^1.5.0"
+google-cloud-secret-manager = "^2.16.0"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
