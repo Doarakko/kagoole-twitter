@@ -38,10 +38,10 @@ jobs:
         with:
           context: "{{defaultContext}}:job"
           push: true
-          tags: asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/main:latest
+          tags: asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/twitter:latest
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1.1.0'
       - name: deploy job
         run: |
           gcloud components install beta
-          gcloud beta run jobs deploy kagoole-twitter --image asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/main --region asia-northeast1
+          gcloud beta run jobs deploy kagoole-twitter --image asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/twitter --region asia-northeast1

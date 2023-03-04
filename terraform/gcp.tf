@@ -382,3 +382,9 @@ resource "google_cloud_scheduler_job" "default" {
     }
   }
 }
+
+resource "google_artifact_registry_repository" "default" {
+  location      = var.gcp_region
+  repository_id = "kagoole"
+  format        = "DOCKER"
+}
