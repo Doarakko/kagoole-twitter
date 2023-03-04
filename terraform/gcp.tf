@@ -141,8 +141,17 @@ resource "google_cloud_run_v2_job" "default" {
     template {
       volumes {
         name = "a-volume"
-        secret {
-          secret       = google_secret_manager_secret.name.secret_id
+        dynamic "secret" {
+          for_each = [
+            google_secret_manager_secret.kaggle_username,
+            google_secret_manager_secret.kaggle_key,
+            google_secret_manager_secret.twitter_bearer_token,
+            google_secret_manager_secret.twitter_consumer_key,
+            google_secret_manager_secret.twitter_consumer_secret,
+            google_secret_manager_secret.twitter_access_token,
+            google_secret_manager_secret.twitter_access_token_secret
+          ]
+          secret       = each.value.id
           default_mode = 292
           items {
             version = "1"
