@@ -153,7 +153,7 @@ resource "google_cloud_run_v2_job" "default" {
         content {
           name = "a-volume"
           secret {
-            secret       = each.value.id
+            secret       = env.value.id
             default_mode = 292
             items {
               version = "1"
