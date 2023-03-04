@@ -278,7 +278,7 @@ resource "google_secret_manager_secret_version" "twitter_access_token_secret" {
 }
 
 resource "google_secret_manager_secret_iam_member" "default" {
-  for_each = [
+  for_each = toset([
     google_secret_manager_secret.kaggle_username,
     google_secret_manager_secret.kaggle_key,
     google_secret_manager_secret.twitter_bearer_token,
@@ -286,7 +286,7 @@ resource "google_secret_manager_secret_iam_member" "default" {
     google_secret_manager_secret.twitter_consumer_secret,
     google_secret_manager_secret.twitter_access_token,
     google_secret_manager_secret.twitter_access_token_secret
-  ]
+  ])
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
