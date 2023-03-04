@@ -36,7 +36,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: "{{defaultContext}}:job/kagoole-twitter"
+          context: "{{defaultContext}}:job"
           push: true
           tags: asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/main:latest
       - name: 'Set up Cloud SDK'
