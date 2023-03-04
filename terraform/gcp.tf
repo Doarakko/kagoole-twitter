@@ -209,7 +209,15 @@ resource "google_cloud_run_v2_job" "default" {
     }
   }
 
-  depends_on = [google_secret_manager_secret_iam_member.default]
+  depends_on = [
+    google_secret_manager_secret_iam_member.kaggle_username,
+    google_secret_manager_secret_iam_member.kaggle_key,
+    google_secret_manager_secret_iam_member.twitter_bearer_token,
+    google_secret_manager_secret_iam_member.twitter_consumer_key,
+    google_secret_manager_secret_iam_member.twitter_consumer_secret,
+    google_secret_manager_secret_iam_member.twitter_access_token,
+    google_secret_manager_secret_iam_member.twitter_access_token_secret
+  ]
 }
 
 resource "google_secret_manager_secret" "kaggle_username" {
@@ -303,28 +311,54 @@ resource "google_secret_manager_secret_version" "twitter_access_token_secret" {
   secret_data = "please enter in console"
 }
 
-resource "google_secret_manager_secret_iam_member" "default" {
-  for_each = toset([
-    google_secret_manager_secret.kaggle_username,
-    google_secret_manager_secret.kaggle_key,
-    google_secret_manager_secret.twitter_bearer_token,
-    google_secret_manager_secret.twitter_consumer_key,
-    google_secret_manager_secret.twitter_consumer_secret,
-    google_secret_manager_secret.twitter_access_token,
-    google_secret_manager_secret.twitter_access_token_secret
-  ])
-  secret_id = each.value.id
+resource "google_secret_manager_secret_iam_member" "kaggle_username" {
+  secret_id  = google_secret_manager_secret.kaggle_username.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.kaggle_username]
+}
+
+resource "google_secret_manager_secret_iam_member" "kaggle_key" {
+  secret_id  = google_secret_manager_secret.kaggle_key.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.kaggle_key]
+}
+
+resource "google_secret_manager_secret_iam_member" "twitter_bearer_token" {
+  secret_id  = google_secret_manager_secret.twitter_bearer_token.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.twitter_bearer_token]
+}
+
+resource "google_secret_manager_secret_iam_member" "twitter_consumer_key" {
+  secret_id  = google_secret_manager_secret.twitter_consumer_key.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.twitter_consumer_key]
+}
+
+resource "google_secret_manager_secret_iam_member" "twitter_consumer_secret" {
+  secret_id  = google_secret_manager_secret.twitter_consumer_secret.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.twitter_consumer_secret, ]
+}
+
+resource "google_secret_manager_secret_iam_member" "twitter_access_token" {
+  secret_id = google_secret_manager_secret.twitter_access_token.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
   depends_on = [
-    google_secret_manager_secret.kaggle_username,
-    google_secret_manager_secret.kaggle_key,
-    google_secret_manager_secret.twitter_bearer_token,
-    google_secret_manager_secret.twitter_consumer_key,
-    google_secret_manager_secret.twitter_consumer_secret,
-    google_secret_manager_secret.twitter_access_token,
-    google_secret_manager_secret.twitter_access_token_secret
-  ]
+  google_secret_manager_secret.twitter_access_token]
+}
+
+resource "google_secret_manager_secret_iam_member" "twitter_access_token_secret" {
+  secret_id  = google_secret_manager_secret.twitter_access_token_secret.id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [google_secret_manager_secret.twitter_access_token_secret]
 }
 
 resource "google_cloud_scheduler_job" "default" {
