@@ -139,7 +139,7 @@ resource "google_cloud_run_v2_job" "default" {
 
   template {
     template {
-      volumes {
+      dynamic "volumes" {
         for_each = toset([
           google_secret_manager_secret.kaggle_username,
           google_secret_manager_secret.kaggle_key,
@@ -149,23 +149,38 @@ resource "google_cloud_run_v2_job" "default" {
           google_secret_manager_secret.twitter_access_token,
           google_secret_manager_secret.twitter_access_token_secret
         ])
-        name = "a-volume"
-        secret {
-          secret       = each.value.id
-          default_mode = 292
-          items {
-            version = "1"
-            path    = "my-secret"
-            mode    = 256
+
+        content {
+          name = "a-volume"
+          secret {
+            secret       = each.value.id
+            default_mode = 292
+            items {
+              version = "1"
+              path    = "my-secret"
+              mode    = 256
+            }
           }
         }
       }
 
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello"
-        volume_mounts {
-          name       = "a-volume"
-          mount_path = "/secrets"
+        dynamic "volume_mounts" {
+          for_each = toset([
+            google_secret_manager_secret.kaggle_username,
+            google_secret_manager_secret.kaggle_key,
+            google_secret_manager_secret.twitter_bearer_token,
+            google_secret_manager_secret.twitter_consumer_key,
+            google_secret_manager_secret.twitter_consumer_secret,
+            google_secret_manager_secret.twitter_access_token,
+            google_secret_manager_secret.twitter_access_token_secret
+          ])
+
+          content {
+            name       = "a-volume"
+            mount_path = "/secrets"
+          }
         }
 
         env {
