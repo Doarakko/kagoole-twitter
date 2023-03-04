@@ -9,7 +9,7 @@ import tweepy
 
 def get_secret_value(name: str) -> str:
     client = secretmanager.SecretManagerServiceClient()
-    name = client.secret_version_path(os.getenv("PROJECT_ID"), name, "latest")
+    name = client.secret_version_path(os.getenv("GCP_PROJECT_ID"), name, "latest")
     response = client.access_secret_version(request={"name": name})
 
     crc32c = google_crc32c.Checksum()

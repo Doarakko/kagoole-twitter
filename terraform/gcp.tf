@@ -132,6 +132,21 @@ resource "google_project_iam_member" "admin_account_iam" {
   member   = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+locals {
+  envs = [
+    {
+      key   = "GCP_PROJECT_ID",
+      value = var.gcp_project_id
+      }, {
+      key   = "KAGGLE_USERNAME",
+      value = "please enter in console"
+      }, {
+      key   = "KAGGLE_KEY",
+      value = "please enter in console"
+    }
+  ]
+}
+
 resource "google_cloud_run_v2_job" "default" {
   name         = "kagoole-twitter"
   location     = var.gcp_region
@@ -157,41 +172,109 @@ resource "google_cloud_run_v2_job" "default" {
           name       = "a-volume"
           mount_path = "/secrets"
         }
-        env {
-          name  = "PROJECT_ID"
-          value = var.gcp_project_id
+        dynamic "env" {
+          for_each = local.envs
+          content {
+            name  = env.key
+            value = env.value
+          }
         }
       }
     }
   }
 }
 
-resource "google_secret_manager_secret" "name" {
-  secret_id = "name"
+resource "google_secret_manager_secret" "twitter_bearer_token" {
+  secret_id = "twitter_bearer_token"
 
   replication {
     automatic = true
   }
 }
 
-resource "google_secret_manager_secret_version" "default" {
-  secret      = google_secret_manager_secret.name.name
+resource "google_secret_manager_secret_version" "twitter_bearer_token" {
+  secret      = google_secret_manager_secret.twitter_bearer_token.name
+  secret_data = "please enter in console"
+}
+
+resource "google_secret_manager_secret" "twitter_consumer_key" {
+  secret_id = "twitter_consumer_key"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "twitter_consumer_key" {
+  secret      = google_secret_manager_secret.twitter_consumer_key.name
+  secret_data = "please enter in console"
+}
+
+resource "google_secret_manager_secret" "twitter_consumer_secret" {
+  secret_id = "twitter_consumer_secret"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "twitter_consumer_secret" {
+  secret      = google_secret_manager_secret.twitter_consumer_secret.name
+  secret_data = "please enter in console"
+}
+
+resource "google_secret_manager_secret" "twitter_access_token" {
+  secret_id = "twitter_access_token"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "twitter_access_token" {
+  secret      = google_secret_manager_secret.twitter_access_token.name
+  secret_data = "please enter in console"
+}
+
+resource "google_secret_manager_secret" "twitter_access_token_secret" {
+  secret_id = "twitter_access_token_secret"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "twitter_access_token_secret" {
+  secret      = google_secret_manager_secret.twitter_access_token_secret.name
   secret_data = "please enter in console"
 }
 
 resource "google_secret_manager_secret_iam_member" "default" {
-  secret_id  = google_secret_manager_secret.name.id
-  role       = "roles/secretmanager.secretAccessor"
-  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [google_secret_manager_secret.name]
+  for_each = [
+    google_secret_manager_secret.twitter_bearer_token,
+    google_secret_manager_secret.twitter_consumer_key,
+    google_secret_manager_secret.twitter_consumer_secret,
+    google_secret_manager_secret.twitter_access_token,
+    google_secret_manager_secret.twitter_access_token_secret
+  ]
+  secret_id = each.value.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [
+    google_secret_manager_secret.twitter_bearer_token,
+    google_secret_manager_secret.twitter_consumer_key,
+    google_secret_manager_secret.twitter_consumer_secret,
+    google_secret_manager_secret.twitter_access_token,
+    google_secret_manager_secret.twitter_access_token_secret
+  ]
 }
 
 resource "google_cloud_scheduler_job" "default" {
-  name             = "kagoole-twitter-job"
+  name = "kagoole-twitter-job"
   # if you change execution schedule, you must change interval too(job/main.py).
   schedule         = "* /10 * * * *"
   time_zone        = "Asia/Tokyo"
-  attempt_deadline = "1m"
+  attempt_deadline = "180s"
   region           = var.gcp_region
 
   retry_config {
