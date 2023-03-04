@@ -139,8 +139,8 @@ resource "google_cloud_run_v2_job" "default" {
 
   template {
     template {
-      dynamic "volumes" {
-        for_each = [
+      volumes {
+        for_each = toset([
           google_secret_manager_secret.kaggle_username,
           google_secret_manager_secret.kaggle_key,
           google_secret_manager_secret.twitter_bearer_token,
@@ -148,8 +148,7 @@ resource "google_cloud_run_v2_job" "default" {
           google_secret_manager_secret.twitter_consumer_secret,
           google_secret_manager_secret.twitter_access_token,
           google_secret_manager_secret.twitter_access_token_secret
-        ]
-
+        ])
         name = "a-volume"
         secret {
           secret       = each.value.id
@@ -161,12 +160,14 @@ resource "google_cloud_run_v2_job" "default" {
           }
         }
       }
+
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello"
         volume_mounts {
           name       = "a-volume"
           mount_path = "/secrets"
         }
+
         env {
           name  = "GCP_PROJECT_ID"
           value = var.gcp_project_id
