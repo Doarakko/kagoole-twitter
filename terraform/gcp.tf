@@ -132,21 +132,6 @@ resource "google_project_iam_member" "admin_account_iam" {
   member   = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-locals {
-  envs = [
-    {
-      key   = "GCP_PROJECT_ID",
-      value = var.gcp_project_id
-      }, {
-      key   = "KAGGLE_USERNAME",
-      value = "please enter in console"
-      }, {
-      key   = "KAGGLE_KEY",
-      value = "please enter in console"
-    }
-  ]
-}
-
 resource "google_cloud_run_v2_job" "default" {
   name         = "kagoole-twitter"
   location     = var.gcp_region
@@ -172,16 +157,59 @@ resource "google_cloud_run_v2_job" "default" {
           name       = "a-volume"
           mount_path = "/secrets"
         }
-        dynamic "env" {
-          for_each = local.envs
-          content {
-            name  = env.key
-            value = env.value
+        env {
+          name  = "GCP_PROJECT_ID"
+          value = var.gcp_project_id
+        }
+        env {
+          name = "KAGGLE_USERNAME"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.kaggle_username.secret_id
+              version = "latest"
+            }
+          }
+        }
+        env {
+          name = "KAGGLE_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.kaggle_key.secret_id
+              version = "latest"
+            }
           }
         }
       }
     }
   }
+
+  depends_on = [google_secret_manager_secret_iam_member.default]
+}
+
+resource "google_secret_manager_secret" "kaggle_username" {
+  secret_id = "kaggle_username"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "kaggle_username" {
+  secret      = google_secret_manager_secret.kaggle_username.name
+  secret_data = "please enter in console"
+}
+
+resource "google_secret_manager_secret" "kaggle_key" {
+  secret_id = "kaggle_key"
+
+  replication {
+    automatic = true
+  }
+}
+
+resource "google_secret_manager_secret_version" "kaggle_key" {
+  secret      = google_secret_manager_secret.kaggle_key.name
+  secret_data = "please enter in console"
 }
 
 resource "google_secret_manager_secret" "twitter_bearer_token" {
@@ -251,6 +279,8 @@ resource "google_secret_manager_secret_version" "twitter_access_token_secret" {
 
 resource "google_secret_manager_secret_iam_member" "default" {
   for_each = [
+    google_secret_manager_secret.kaggle_username,
+    google_secret_manager_secret.kaggle_key,
     google_secret_manager_secret.twitter_bearer_token,
     google_secret_manager_secret.twitter_consumer_key,
     google_secret_manager_secret.twitter_consumer_secret,
@@ -261,6 +291,8 @@ resource "google_secret_manager_secret_iam_member" "default" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
   depends_on = [
+    google_secret_manager_secret.kaggle_username,
+    google_secret_manager_secret.kaggle_key,
     google_secret_manager_secret.twitter_bearer_token,
     google_secret_manager_secret.twitter_consumer_key,
     google_secret_manager_secret.twitter_consumer_secret,
