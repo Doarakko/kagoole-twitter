@@ -1,20 +1,3 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "4.53.1"
-    }
-  }
-
-  cloud {
-    organization = "Doarakko"
-
-    workspaces {
-      name = "kagoole-twitter"
-    }
-  }
-}
-
 provider "google" {
   project = var.gcp_project_id
   region  = var.gcp_region
@@ -343,7 +326,7 @@ resource "google_secret_manager_secret_iam_member" "twitter_consumer_secret" {
   secret_id  = google_secret_manager_secret.twitter_consumer_secret.id
   role       = "roles/secretmanager.secretAccessor"
   member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [google_secret_manager_secret.twitter_consumer_secret, ]
+  depends_on = [google_secret_manager_secret.twitter_consumer_secret]
 }
 
 resource "google_secret_manager_secret_iam_member" "twitter_access_token" {
