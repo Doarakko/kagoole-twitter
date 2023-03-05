@@ -156,7 +156,7 @@ resource "google_cloud_run_v2_job" "default" {
           ])
 
           content {
-            name       = "${volumes.value.id}-volume"
+            name       = "${volume_mounts.value.id}-volume"
             mount_path = "/secrets"
           }
         }
