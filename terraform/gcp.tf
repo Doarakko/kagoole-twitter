@@ -134,7 +134,7 @@ resource "google_cloud_run_v2_job" "default" {
         ])
 
         content {
-          name = "${replace(volume_mounts.value.secret.name, "projects/${data.google_project.project.number}/secrets/", "")}-volume"
+          name = "${replace(volumes.value.name, "projects/${data.google_project.project.number}/secrets/", "")}-volume"
           secret {
             secret       = volumes.value.id
             default_mode = 292
@@ -156,7 +156,7 @@ resource "google_cloud_run_v2_job" "default" {
           ])
 
           content {
-            name       = "${replace(volume_mounts.value.secret.name, "projects/${data.google_project.project.number}/secrets/", "")}-volume"
+            name       = "${replace(volume_mounts.value.name, "projects/${data.google_project.project.number}/secrets/", "")}-volume"
             mount_path = "/secrets"
           }
         }
