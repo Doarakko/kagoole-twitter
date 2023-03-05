@@ -68,7 +68,9 @@ def list_new_competitions(after: datetime.datetime) -> list[Competition]:
 
 if __name__ == "__main__":
     # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
-    after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
+    after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        minutes=10
+    )
     competitions: list[Competition] = list_new_competitions(after)
 
     twitter_client: tweepy.Client = tweepy.Client(
@@ -81,5 +83,5 @@ if __name__ == "__main__":
 
     for c in competitions:
         twitter_client.create_tweet(
-            text=f'"{c.title}" is lauched.\n\nMedal: {c.can_get_award_points}\nKernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}'
+            text=f'New #kaggle competition "{c.title}" is lauched.\n\nMedal: {c.can_get_award_points}\nKernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}'
         )
