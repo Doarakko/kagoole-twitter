@@ -157,7 +157,7 @@ resource "google_cloud_run_v2_job" "default" {
 
           content {
             name       = "${replace(volume_mounts.value.name, "projects/${data.google_project.project.number}/secrets/", "")}-volume"
-            mount_path = "/secrets"
+            mount_path = replace(volume_mounts.value.name, "projects/${data.google_project.project.number}/secrets/", "")
           }
         }
 
