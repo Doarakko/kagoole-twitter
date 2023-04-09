@@ -69,7 +69,7 @@ def list_new_competitions(after: datetime.datetime) -> list[Competition]:
 if __name__ == "__main__":
     # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
     after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        minutes=10
+        minutes=30
     )
     competitions: list[Competition] = list_new_competitions(after)
 

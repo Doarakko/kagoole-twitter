@@ -342,7 +342,7 @@ resource "google_secret_manager_secret_iam_member" "twitter_access_token_secret"
 resource "google_cloud_scheduler_job" "default" {
   name = "kagoole-twitter-job"
   # if you change execution schedule, you must change interval too(job/main.py).
-  schedule         = "*/10 * * * *"
+  schedule         = "*/30 * * * *"
   time_zone        = "Asia/Tokyo"
   attempt_deadline = "180s"
   region           = var.gcp_region
