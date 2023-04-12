@@ -67,21 +67,24 @@ def list_new_competitions(after: datetime.datetime) -> list[Competition]:
 
 
 if __name__ == "__main__":
-    # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
-    after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        minutes=30
-    )
-    competitions: list[Competition] = list_new_competitions(after)
-
-    twitter_client: tweepy.Client = tweepy.Client(
-        bearer_token=get_secret_value("twitter_bearer_token"),
-        consumer_key=get_secret_value("twitter_consumer_key"),
-        consumer_secret=get_secret_value("twitter_consumer_secret"),
-        access_token=get_secret_value("twitter_access_token"),
-        access_token_secret=get_secret_value("twitter_access_token_secret"),
-    )
-
-    for c in competitions:
-        twitter_client.create_tweet(
-            text=f'New #kaggle competition "{c.title}" is lauched.\n\nMedal: {c.can_get_award_points}\nKernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}'
+    try:
+        # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
+        after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            minutes=30
         )
+        competitions: list[Competition] = list_new_competitions(after)
+
+        twitter_client: tweepy.Client = tweepy.Client(
+            bearer_token=get_secret_value("twitter_bearer_token"),
+            consumer_key=get_secret_value("twitter_consumer_key"),
+            consumer_secret=get_secret_value("twitter_consumer_secret"),
+            access_token=get_secret_value("twitter_access_token"),
+            access_token_secret=get_secret_value("twitter_access_token_secret"),
+        )
+
+        for c in competitions:
+            twitter_client.create_tweet(
+                text=f'New #kaggle competition "{c.title}" is lauched.\n\nMedal: {c.can_get_award_points}\nKernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}'
+            )
+    except Exception as e:
+        print(e)
