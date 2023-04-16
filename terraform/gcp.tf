@@ -142,6 +142,9 @@ resource "google_cloud_run_v2_job" "default" {
         }
       }
 
+      timeout = "60s"
+      max_retries = 0
+
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello"
         dynamic "volume_mounts" {
