@@ -206,22 +206,12 @@ resource "google_secret_manager_secret" "kaggle_username" {
   }
 }
 
-resource "google_secret_manager_secret_version" "kaggle_username" {
-  secret      = google_secret_manager_secret.kaggle_username.name
-  secret_data = "please enter in console"
-}
-
 resource "google_secret_manager_secret" "kaggle_key" {
   secret_id = "kaggle_key"
 
   replication {
     automatic = true
   }
-}
-
-resource "google_secret_manager_secret_version" "kaggle_key" {
-  secret      = google_secret_manager_secret.kaggle_key.name
-  secret_data = "please enter in console"
 }
 
 resource "google_secret_manager_secret" "twitter_bearer_token" {
@@ -232,22 +222,12 @@ resource "google_secret_manager_secret" "twitter_bearer_token" {
   }
 }
 
-resource "google_secret_manager_secret_version" "twitter_bearer_token" {
-  secret      = google_secret_manager_secret.twitter_bearer_token.name
-  secret_data = "please enter in console"
-}
-
 resource "google_secret_manager_secret" "twitter_consumer_key" {
   secret_id = "twitter_consumer_key"
 
   replication {
     automatic = true
   }
-}
-
-resource "google_secret_manager_secret_version" "twitter_consumer_key" {
-  secret      = google_secret_manager_secret.twitter_consumer_key.name
-  secret_data = "please enter in console"
 }
 
 resource "google_secret_manager_secret" "twitter_consumer_secret" {
@@ -258,11 +238,6 @@ resource "google_secret_manager_secret" "twitter_consumer_secret" {
   }
 }
 
-resource "google_secret_manager_secret_version" "twitter_consumer_secret" {
-  secret      = google_secret_manager_secret.twitter_consumer_secret.name
-  secret_data = "please enter in console"
-}
-
 resource "google_secret_manager_secret" "twitter_access_token" {
   secret_id = "twitter_access_token"
 
@@ -271,22 +246,12 @@ resource "google_secret_manager_secret" "twitter_access_token" {
   }
 }
 
-resource "google_secret_manager_secret_version" "twitter_access_token" {
-  secret      = google_secret_manager_secret.twitter_access_token.name
-  secret_data = "please enter in console"
-}
-
 resource "google_secret_manager_secret" "twitter_access_token_secret" {
   secret_id = "twitter_access_token_secret"
 
   replication {
     automatic = true
   }
-}
-
-resource "google_secret_manager_secret_version" "twitter_access_token_secret" {
-  secret      = google_secret_manager_secret.twitter_access_token_secret.name
-  secret_data = "please enter in console"
 }
 
 resource "google_secret_manager_secret_iam_member" "kaggle_username" {
