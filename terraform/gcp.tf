@@ -146,7 +146,7 @@ resource "google_cloud_run_v2_job" "default" {
       max_retries = 0
 
       containers {
-        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        image = "asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/twitter"
         dynamic "volume_mounts" {
           for_each = toset([
             google_secret_manager_secret.kaggle_username,
