@@ -85,8 +85,8 @@ if __name__ == "__main__":
 
         for c in competitions:
             twitter_client.create_tweet(
-                text=f'New #kaggle competition "{c.title}" is launched.\n\nMedal: {c.can_get_award_points}\n'
-                f'Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}'
+                text=f"New #kaggle competition \"{c.title}\" is launched.\n\nMedal: {c.can_get_award_points}\n"
+                f"Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}"
             )
     except Exception as e:
         print(e)
