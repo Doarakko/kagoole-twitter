@@ -82,12 +82,13 @@ if __name__ == "__main__":
             access_token=get_secret_value("twitter_access_token"),
             access_token_secret=get_secret_value("twitter_access_token_secret"),
         )
+        twitter_client.create_tweet(text="test")
 
-        for c in competitions:
-            twitter_client.create_tweet(
-                text=f"New #kaggle competition \"{c.title}\" is launched.\n\nMedal: {c.can_get_award_points}\n"
-                f"Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}"
-            )
+        # for c in competitions:
+        #     twitter_client.create_tweet(
+        #         text=f"New #kaggle competition \"{c.title}\" is launched.\n\nMedal: {c.can_get_award_points}\n"
+        #         f"Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}"
+        #     )
     except Exception as e:
         print(e)
         sys.exit(1)
