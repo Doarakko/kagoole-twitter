@@ -118,7 +118,6 @@ resource "google_project_iam_member" "admin_account_iam" {
 resource "google_cloud_run_v2_job" "default" {
   name         = "kagoole-twitter"
   location     = var.gcp_region
-  launch_stage = "BETA"
 
   template {
     template {
@@ -205,7 +204,7 @@ resource "google_secret_manager_secret" "kaggle_username" {
   secret_id = "kaggle_username"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -213,7 +212,7 @@ resource "google_secret_manager_secret" "kaggle_key" {
   secret_id = "kaggle_key"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -221,7 +220,7 @@ resource "google_secret_manager_secret" "twitter_bearer_token" {
   secret_id = "twitter_bearer_token"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -229,7 +228,7 @@ resource "google_secret_manager_secret" "twitter_consumer_key" {
   secret_id = "twitter_consumer_key"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -237,7 +236,7 @@ resource "google_secret_manager_secret" "twitter_consumer_secret" {
   secret_id = "twitter_consumer_secret"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -245,7 +244,7 @@ resource "google_secret_manager_secret" "twitter_access_token" {
   secret_id = "twitter_access_token"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -253,7 +252,7 @@ resource "google_secret_manager_secret" "twitter_access_token_secret" {
   secret_id = "twitter_access_token_secret"
 
   replication {
-    automatic = true
+    auto {}
   }
 }
 
