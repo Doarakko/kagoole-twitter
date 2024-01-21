@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
         # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
         after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            days=30
+            minutes=30
         )
         competitions: list[Competition] = list_new_competitions(after)
         print(competitions)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
                 text=f"New #kaggle competition \"{c.title}\" is launched.\n\nMedal: {c.can_get_award_points}\n"
                 f"Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}"
             )
-            print("tweet \"{c.title}\"")
+            print(f"tweet \"{c.title}\"")
         
         print("end")
     except Exception as e:
