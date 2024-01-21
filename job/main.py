@@ -53,6 +53,7 @@ def new_kaggle_api():
 
 def list_new_competitions(after: datetime.datetime) -> list[Competition]:
     api = new_kaggle_api()
+    print("completed create kaggle api")
 
     competitions: list[Competition] = []
     for c in api.competitions_list(sort_by="recentlyCreated"):
@@ -69,11 +70,15 @@ def list_new_competitions(after: datetime.datetime) -> list[Competition]:
 
 if __name__ == "__main__":
     try:
+        print("start")
+
         # if you change interval, you must change execution schedule in Cloud Scheduler too(terraform/gcp.tf).
         after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            minutes=30
+            days=30
         )
         competitions: list[Competition] = list_new_competitions(after)
+        print(competitions)
+        print("completed list_new_competitions")
 
         twitter_client: tweepy.Client = tweepy.Client(
             bearer_token=get_secret_value("twitter_bearer_token"),
@@ -82,12 +87,16 @@ if __name__ == "__main__":
             access_token=get_secret_value("twitter_access_token"),
             access_token_secret=get_secret_value("twitter_access_token_secret"),
         )
+        print("completed create twitter client")
 
         for c in competitions:
             twitter_client.create_tweet(
                 text=f"New #kaggle competition \"{c.title}\" is launched.\n\nMedal: {c.can_get_award_points}\n"
                 f"Kernel Only: {c.is_kernel_only}\nDeadline: {c.deadline}\n{c.url}"
             )
+            print("tweet \"{c.title}\"")
+        
+        print("end")
     except Exception as e:
         print(e)
         sys.exit(1)
