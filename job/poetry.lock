@@ -481,12 +481,12 @@ files = [
 
 [[package]]
 name = "kaggle"
-version = "1.6.4"
+version = "1.6.6"
 description = "Kaggle API"
 optional = false
 python-versions = "*"
 files = [
-    {file = "kaggle-1.6.4.tar.gz", hash = "sha256:6a91a7bacb461d2682edf4ca7163f1811ed8ca8a84492263c468ffe7703f101f"},
+    {file = "kaggle-1.6.6.tar.gz", hash = "sha256:db88715cc0618af253b6afde21881ae9e8e6f64b310acfb273fd13f4a5752207"},
 ]
 
 [package.dependencies]
@@ -818,4 +818,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "bbad3d5cc02d5e676977e565c20b5b51b8f9102f728beea0854f566075e636b4"
+content-hash = "908b07c60fa7755df46f6e9258f07562d75d7b8f9d85287cc1433ae8b0d7a399"
