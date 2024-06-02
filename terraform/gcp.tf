@@ -332,4 +332,20 @@ resource "google_artifact_registry_repository" "default" {
   location      = var.gcp_region
   repository_id = "kagoole"
   format        = "DOCKER"
+
+  cleanup_policies {
+    id     = "delete-prerelease"
+    action = "DELETE"
+    condition {
+      tag_state = "UNTAGGED"
+    }
+  }
+
+  cleanup_policies {
+    id     = "keep-minimum-versions"
+    action = "KEEP"
+    condition {
+      tag_prefixes = [ "latest" ]
+    }
+  }
 }
