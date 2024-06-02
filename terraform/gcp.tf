@@ -339,6 +339,9 @@ resource "google_artifact_registry_repository" "default" {
     action = "DELETE"
     condition {
       tag_state = "UNTAGGED"
+      package_name_prefixes = [
+        "twitter",
+      ]
     }
   }
 
@@ -347,6 +350,7 @@ resource "google_artifact_registry_repository" "default" {
     action = "KEEP"
     condition {
       tag_prefixes = [ "latest" ]
+      package_name_prefixes = [ "twitter" ]
     }
   }
 }
