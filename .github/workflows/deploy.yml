@@ -7,7 +7,6 @@ on:
     paths:
       - '.github/workflows/deploy.yml'
       - 'job/**'
-      - 'terraform/**'
 
 permissions:
   contents: 'read'
