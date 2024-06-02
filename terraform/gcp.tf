@@ -333,6 +333,7 @@ resource "google_artifact_registry_repository" "default" {
   repository_id = "kagoole"
   format        = "DOCKER"
 
+  cleanup_policy_dry_run = false
   cleanup_policies {
     id     = "delete-prerelease"
     action = "DELETE"
