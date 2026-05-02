@@ -1,16 +1,28 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: monthly
+      interval: "monthly"
+    groups:
+      all-actions:
+        patterns:
+          - "*"
 
-  - package-ecosystem: pip
-    directory: /job
+  - package-ecosystem: "pip"
+    directory: "/job"
     schedule:
-      interval: monthly
+      interval: "monthly"
+    groups:
+      patch:
+        update-types:
+          - "patch"
 
-  - package-ecosystem: terraform
-    directory: /terraform
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
     schedule:
-      interval: monthly
+      interval: "monthly"
+    groups:
+      all-providers:
+        patterns:
+          - "*"
