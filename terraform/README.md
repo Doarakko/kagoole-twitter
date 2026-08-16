@@ -106,14 +106,18 @@ The backend used to be HCP Terraform (organization `Doarakko`, workspace
 `kagoole-twitter`). Once the migration is complete, this section can be
 deleted.
 
+No separate backup is needed along the way. HCP Terraform keeps every state
+version, and `-migrate-state` copies rather than moves, so the source state
+stays intact until the workspace is deleted.
+
 ```sh
 cd terraform
 
-# Back up the state while the cloud {} block is still in place
+# Start from main, where the cloud {} block is still in place
 git switch main
 terraform login
 terraform init
-terraform state pull > /tmp/kagoole-twitter.tfstate
+terraform state list
 
 # The tfe provider is going away, so drop tfe_variable from the state
 for r in enable_gcp_provider_auth tfc_gcp_project_number tfc_gcp_workload_pool_id \
@@ -124,12 +128,13 @@ done
 # Migrate the state with the GCS backend in place
 git switch <this branch>
 terraform init -migrate-state
-terraform state list
+terraform state list   # five fewer resources than before the state rm
 ```
 
-Delete the HCP Terraform workspace afterwards. **It is connected to this
+Delete the HCP Terraform workspace once CI is green. **It is connected to this
 repository over VCS, so a failing `Terraform Cloud` check keeps appearing on
-every pull request until the workspace is gone.**
+every pull request until the workspace is gone.** Deleting it also discards the
+retained state versions, so leave it in place until the migration is confirmed.
 
 The first apply destroys the resources that existed only for HCP Terraform:
 
