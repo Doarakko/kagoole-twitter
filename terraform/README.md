@@ -136,4 +136,7 @@ The first apply destroys the resources that existed only for HCP Terraform:
 - `google_iam_workload_identity_pool.tfc_pool` (`my-tfc-pool`)
 - `google_iam_workload_identity_pool_provider.tfc_provider` (`my-tfc-provider-id`)
 - `google_service_account.tfc_service_account` (`tfc-service-account`)
+- `google_service_account_iam_member.tfc_service_account_member`
 - `google_project_iam_member.tfc_project_member` (`roles/editor`)
+
+So the first plan should show five destroys and three creates.
