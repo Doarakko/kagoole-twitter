@@ -27,51 +27,6 @@ resource "google_project_service" "project" {
   service = each.value
 }
 
-resource "google_iam_workload_identity_pool" "tfc_pool" {
-  provider                  = google-beta
-  workload_identity_pool_id = "my-tfc-pool"
-}
-
-resource "google_iam_workload_identity_pool_provider" "tfc_provider" {
-  provider                           = google-beta
-  workload_identity_pool_id          = google_iam_workload_identity_pool.tfc_pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "my-tfc-provider-id"
-  attribute_mapping = {
-    "google.subject"                        = "assertion.sub",
-    "attribute.aud"                         = "assertion.aud",
-    "attribute.terraform_run_phase"         = "assertion.terraform_run_phase",
-    "attribute.terraform_project_id"        = "assertion.terraform_project_id",
-    "attribute.terraform_project_name"      = "assertion.terraform_project_name",
-    "attribute.terraform_workspace_id"      = "assertion.terraform_workspace_id",
-    "attribute.terraform_workspace_name"    = "assertion.terraform_workspace_name",
-    "attribute.terraform_organization_id"   = "assertion.terraform_organization_id",
-    "attribute.terraform_organization_name" = "assertion.terraform_organization_name",
-    "attribute.terraform_run_id"            = "assertion.terraform_run_id",
-    "attribute.terraform_full_workspace"    = "assertion.terraform_full_workspace",
-  }
-  oidc {
-    issuer_uri = "https://${var.tfc_hostname}"
-  }
-  attribute_condition = "assertion.sub.startsWith(\"organization:${var.tfc_organization_name}:project:${var.tfc_project_name}:workspace:${var.tfc_workspace_name}\")"
-}
-
-resource "google_service_account" "tfc_service_account" {
-  account_id   = "tfc-service-account"
-  display_name = "Terraform Cloud Service Account"
-}
-
-resource "google_service_account_iam_member" "tfc_service_account_member" {
-  service_account_id = google_service_account.tfc_service_account.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.tfc_pool.name}/*"
-}
-
-resource "google_project_iam_member" "tfc_project_member" {
-  project = var.gcp_project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${google_service_account.tfc_service_account.email}"
-}
-
 resource "google_service_account" "github_actions" {
   project      = var.gcp_project_id
   account_id   = "github-actions"
@@ -115,9 +70,30 @@ resource "google_project_iam_member" "admin_account_iam" {
   member   = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# terraform を GitHub Actions から実行するための service account
+resource "google_service_account" "terraform_github_actions" {
+  project      = var.gcp_project_id
+  account_id   = "terraform-github-actions"
+  display_name = "A service account for terraform on GitHub Actions"
+}
+
+# 全 infra を apply するため owner を付与する
+resource "google_project_iam_member" "terraform_github_actions" {
+  project = var.gcp_project_id
+  role    = "roles/owner"
+  member  = "serviceAccount:${google_service_account.terraform_github_actions.email}"
+}
+
+# このリポジトリの workflow だけが引き受けられる
+resource "google_service_account_iam_member" "terraform_github_actions" {
+  service_account_id = google_service_account.terraform_github_actions.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/${var.gh_repo_name}"
+}
+
 resource "google_cloud_run_v2_job" "default" {
-  name         = "kagoole-twitter"
-  location     = var.gcp_region
+  name     = "kagoole-twitter"
+  location = var.gcp_region
 
   template {
     template {
@@ -141,7 +117,7 @@ resource "google_cloud_run_v2_job" "default" {
         }
       }
 
-      timeout = "60s"
+      timeout     = "60s"
       max_retries = 0
 
       containers {
@@ -349,8 +325,8 @@ resource "google_artifact_registry_repository" "default" {
     id     = "keep-minimum-versions"
     action = "KEEP"
     condition {
-      tag_prefixes = [ "latest" ]
-      package_name_prefixes = [ "twitter" ]
+      tag_prefixes          = ["latest"]
+      package_name_prefixes = ["twitter"]
     }
   }
 }
