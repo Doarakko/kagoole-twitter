@@ -1,0 +1,122 @@
+name: terraform plan
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.terraform-version'
+      - '.github/workflows/terraform_*.yml'
+
+jobs:
+  plan:
+    name: terraform plan
+    runs-on: ubuntu-latest
+    concurrency:
+      # 連続 push した場合は実行途中の plan はキャンセルし、最後の plan のみ実行する
+      group: terraform-plan-${{ github.head_ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      # WIF によるキーレス認証
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: 'projects/631578640507/locations/global/workloadIdentityPools/gh-oidc-pool/providers/gh-oidc-provider'
+          service_account: 'terraform-github-actions@kagoole-379522.iam.gserviceaccount.com'
+
+      - name: Check Terraform version
+        id: check_tf_version
+        working-directory: .
+        run: |
+          tf_version=$(cat .terraform-version)
+          echo "tf_version=$tf_version" >> $GITHUB_OUTPUT
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ steps.check_tf_version.outputs.tf_version }}
+
+      - name: Terraform fmt
+        run: terraform fmt -recursive -check
+
+      - name: Terraform init
+        id: init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        continue-on-error: true
+        run: |
+          terraform plan -input=false -out=plan.tmp
+          terraform show -no-color plan.tmp > ${GITHUB_WORKSPACE}/plan.out
+
+      - name: Remove Old Comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const opts = github.rest.issues.listComments.endpoint.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            })
+            const comments = await github.paginate(opts)
+            for (const comment of comments) {
+              if (comment.user.login === "github-actions[bot]" && comment.body.startsWith("### terraform")) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                })
+              }
+            }
+
+      - name: Update Pull Request
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+            const run_link = '<a href="' + run_url + '">Actions</a>.'
+            const fs = require('fs')
+            const plan_file = fs.existsSync('plan.out') ? fs.readFileSync('plan.out', 'utf8') : 'plan failed. see ' + run_url
+            const plan = plan_file.length > 65000 ? plan_file.toString().substring(0, 65000) + " ..." : plan_file
+            const truncated_message = plan_file.length > 65000 ? "Output is too long and was truncated. You can read full Plan in " + run_link + "<br /><br />" : ""
+            const output = `### terraform
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`hcl\n
+            ${plan}
+            \`\`\`
+
+            </details>
+            ${truncated_message}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
