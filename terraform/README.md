@@ -119,11 +119,19 @@ terraform login
 terraform init
 terraform state list
 
-# The tfe provider is going away, so drop tfe_variable from the state
-for r in enable_gcp_provider_auth tfc_gcp_project_number tfc_gcp_workload_pool_id \
-         tfc_gcp_workload_provider_id tfc_gcp_service_account_email; do
-  terraform state rm "tfe_variable.$r"
-done
+# The tfe provider is going away, so drop tfe_variable from the state.
+# This only edits the state; it never calls the provider, so no TFE token is
+# needed and the variables in the HCP Terraform workspace are left alone.
+terraform state rm \
+  tfe_variable.enable_gcp_provider_auth \
+  tfe_variable.tfc_gcp_project_number \
+  tfe_variable.tfc_gcp_workload_pool_id \
+  tfe_variable.tfc_gcp_workload_provider_id \
+  tfe_variable.tfc_gcp_service_account_email
+
+# init on main generates an untracked .terraform.lock.hcl, and the branch
+# tracks that path, so the switch below fails unless it is removed first
+rm .terraform.lock.hcl
 
 # Migrate the state with the GCS backend in place
 git switch <this branch>
