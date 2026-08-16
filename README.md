@@ -15,6 +15,8 @@ Terraform state is stored in `gs://kagoole-379522-tfstate`.
 
 GCP authentication uses Workload Identity Federation, so no service account key is required.
 
+See [terraform/README.md](./terraform/README.md) for the setup procedure.
+
 ## Reference
 
 - [Kagoole](https://github.com/Doarakko/kagoole)
