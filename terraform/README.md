@@ -107,8 +107,13 @@ The backend used to be HCP Terraform (organization `Doarakko`, workspace
 deleted.
 
 No separate backup is needed along the way. HCP Terraform keeps every state
-version, and `-migrate-state` copies rather than moves, so the source state
-stays intact until the workspace is deleted.
+version, and the migration copies rather than moves, so the source state stays
+intact until the workspace is deleted.
+
+The workspace pins its Terraform version. If it is older than the version in
+`.terraform-version`, state writes are rejected with `Incompatible Terraform
+version` while reads still succeed. Raise it under **Settings > General >
+Terraform Version** before starting; the workspace is going away anyway.
 
 ```sh
 cd terraform
@@ -119,7 +124,11 @@ terraform login
 terraform init
 terraform state list
 
-# The tfe provider is going away, so drop tfe_variable from the state.
+# The tfe provider is going away, so drop everything that belongs to it,
+# including the two data sources. Leaving them behind makes the state require
+# hashicorp/tfe, which is absent from the branch's .terraform.lock.hcl and
+# breaks the init below.
+#
 # This only edits the state; it never calls the provider, so no TFE token is
 # needed and the variables in the HCP Terraform workspace are left alone.
 terraform state rm \
@@ -127,16 +136,20 @@ terraform state rm \
   tfe_variable.tfc_gcp_project_number \
   tfe_variable.tfc_gcp_workload_pool_id \
   tfe_variable.tfc_gcp_workload_provider_id \
-  tfe_variable.tfc_gcp_service_account_email
+  tfe_variable.tfc_gcp_service_account_email \
+  data.tfe_organization.organization \
+  data.tfe_workspace.workspace
 
 # init on main generates an untracked .terraform.lock.hcl, and the branch
 # tracks that path, so the switch below fails unless it is removed first
 rm .terraform.lock.hcl
 
-# Migrate the state with the GCS backend in place
+# Migrate the state with the GCS backend in place. Note that -migrate-state
+# is rejected here: it only covers backend-to-backend moves, and migrating off
+# HCP Terraform is driven by interactive prompts on a plain init instead.
 git switch <this branch>
-terraform init -migrate-state
-terraform state list   # five fewer resources than before the state rm
+terraform init
+terraform state list   # seven fewer entries than before the state rm
 ```
 
 Delete the HCP Terraform workspace once CI is green. **It is connected to this
