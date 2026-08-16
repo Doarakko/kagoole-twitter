@@ -5,3 +5,7 @@ output "gh_actions_google_workload_identity_provider" {
 output "gh_actions_google_service_account" {
   value = google_service_account.github_actions.email
 }
+
+output "terraform_gh_actions_google_service_account" {
+  value = google_service_account.terraform_github_actions.email
+}
