@@ -18,7 +18,7 @@ jobs:
     name: terraform apply
     runs-on: ubuntu-latest
     concurrency:
-      # 同時 apply は防ぐが、実行中の apply はキャンセルしない（state 不整合を防ぐため）
+      # Prevent concurrent applies, but never cancel a running one to avoid a broken state
       group: terraform-apply-${{ github.ref }}
       cancel-in-progress: false
     defaults:
@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      # WIF によるキーレス認証
+      # Keyless authentication via Workload Identity Federation
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:

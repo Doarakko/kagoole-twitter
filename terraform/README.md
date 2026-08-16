@@ -1,37 +1,42 @@
 # terraform
 
-## 構成
+## Overview
 
-| 項目 | 値 |
+| Item | Value |
 | --- | --- |
-| GCP プロジェクト | `kagoole-379522` (project number `631578640507`) |
-| リージョン | `asia-northeast1` |
-| backend | GCS `gs://kagoole-379522-tfstate` / prefix `terraform/state` |
-| terraform バージョン | `.terraform-version`（リポジトリルート）で固定 |
+| GCP project | `kagoole-379522` (project number `631578640507`) |
+| Region | `asia-northeast1` |
+| Backend | GCS `gs://kagoole-379522-tfstate` with prefix `terraform/state` |
+| Terraform version | Pinned by `.terraform-version` in the repository root |
 
-state バケットは **terraform 管理外**です。backend の保存先を backend 自身の state で管理できないことと、誤った apply で state ごと失うのを防ぐためです。
+The state bucket is **not managed by terraform**. A backend cannot manage the
+bucket that stores its own state, and keeping it outside terraform also
+prevents a bad apply from destroying the state along with it.
 
-## 日常の運用
+## Day-to-day operation
 
-CI がすべて実行するので、通常ローカルで apply する必要はありません。
+Everything runs in CI, so there is normally no need to apply locally.
 
-| タイミング | 実行内容 | workflow |
+| Trigger | What runs | Workflow |
 | --- | --- | --- |
-| pull request | `fmt` / `init` / `validate` / `plan` → 結果を PR にコメント | `.github/workflows/terraform_plan.yml` |
-| `main` へ merge | `apply -auto-approve` | `.github/workflows/terraform_apply.yml` |
+| Pull request | `fmt` / `init` / `validate` / `plan`, result posted as a PR comment | `.github/workflows/terraform_plan.yml` |
+| Merge to `main` | `apply -auto-approve` | `.github/workflows/terraform_apply.yml` |
 
-GCP 認証は Workload Identity Federation によるキーレス認証で、service account key は使いません。
+GCP authentication uses Workload Identity Federation, so no service account
+key is involved.
 
-| 用途 | service account | 権限 |
+| Purpose | Service account | Roles |
 | --- | --- | --- |
 | terraform (CI) | `terraform-github-actions@kagoole-379522.iam.gserviceaccount.com` | `roles/owner` |
-| コンテナ build / deploy (`deploy.yml`) | `github-actions@kagoole-379522.iam.gserviceaccount.com` | `artifactregistry.admin`, `run.developer`, `iam.serviceAccountUser` |
+| Container build and deploy (`deploy.yml`) | `github-actions@kagoole-379522.iam.gserviceaccount.com` | `artifactregistry.admin`, `run.developer`, `iam.serviceAccountUser` |
 
-どちらも workload identity pool `gh-oidc-pool` を共有し、`attribute.repository` がこのリポジトリの場合のみ引き受け可能です。
+Both share the workload identity pool `gh-oidc-pool` and can only be
+impersonated when `attribute.repository` matches this repository.
 
-## ローカルで実行する
+## Running locally
 
-state を直接触るため、通常は plan までに留めてください。
+Local runs touch the shared state directly, so stop at `plan` unless you are
+bootstrapping.
 
 ```sh
 gcloud auth application-default login
@@ -40,13 +45,15 @@ terraform init
 terraform plan
 ```
 
-## 初回セットアップ
+## Initial setup
 
-CI が使う service account そのものを terraform で管理しているため、**最初の 1 回だけはローカルからの apply が必要**です（鶏と卵）。これを終えれば以降は CI だけで回ります。
+The service account that CI authenticates as is itself managed by terraform,
+so **the very first apply has to be run locally** (chicken and egg). Once it is
+done, everything else runs in CI.
 
-### 1. state バケットを作成する
+### 1. Create the state bucket
 
-terraform 管理外なので手動で作成します。
+It is not managed by terraform, so create it by hand.
 
 ```sh
 gcloud storage buckets create gs://kagoole-379522-tfstate \
@@ -58,19 +65,20 @@ gcloud storage buckets create gs://kagoole-379522-tfstate \
 gcloud storage buckets update gs://kagoole-379522-tfstate --versioning
 ```
 
-### 2. 初回 apply
+### 2. Run the first apply
 
 ```sh
 gcloud auth application-default login
 cd terraform
 terraform init
-terraform plan    # 内容を確認してから
+terraform plan    # review the output first
 terraform apply
 ```
 
-これで `terraform-github-actions` service account、`roles/owner` の付与、workload identity のバインディングが作成され、CI が認証できるようになります。
+This creates the `terraform-github-actions` service account, its `roles/owner`
+binding, and the workload identity binding, after which CI can authenticate.
 
-### 3. 確認
+### 3. Verify
 
 ```sh
 gcloud iam service-accounts describe \
@@ -78,40 +86,52 @@ gcloud iam service-accounts describe \
   --project=kagoole-379522
 ```
 
-## 注意
+## Notes
 
-- `terraform-github-actions` の service account と 2 つの IAM バインディングには `lifecycle { prevent_destroy = true }` を設定しています。これらが消えると CI が自分自身をロックアウトし、ローカル apply でしか復旧できないためです。ただし **リソースブロックごと削除した場合は効きません**（`lifecycle` の設定は state ではなく config 側にあるため）。
-- CI の service account が `roles/owner` を持つのは、この config が service account 作成・プロジェクト IAM 付与・API 有効化まで含むためです。将来 CI を最小権限にしたくなったら、ブートストラップ部分（`cicd` 相当）を別 state に切り出すタイミングです。
-- Secret Manager に登録する値そのものは terraform 管理外です。secret のリソースだけを作成し、値は別途登録します。
+- The `terraform-github-actions` service account and its two IAM bindings are
+  guarded with `lifecycle { prevent_destroy = true }`, because losing them
+  locks CI out of its own project and recovery requires a local apply. This
+  does **not** protect against deleting the resource blocks themselves, since
+  the `lifecycle` setting lives in the config rather than in the state.
+- The CI service account needs `roles/owner` because this config also creates
+  service accounts, grants project IAM, and enables APIs. If you ever want to
+  narrow that down, that is the point at which to split the bootstrap
+  resources into a separate state.
+- Secret Manager values are not managed by terraform. Only the secret
+  resources are created here; the values are registered separately.
 
-## 付録: HCP Terraform からの移行（一度きり）
+## Appendix: migrating off HCP Terraform (one-time)
 
-以前は HCP Terraform (org `Doarakko` / workspace `kagoole-twitter`) を backend にしていました。移行が完了していれば、この節は削除して構いません。
+The backend used to be HCP Terraform (organization `Doarakko`, workspace
+`kagoole-twitter`). Once the migration is complete, this section can be
+deleted.
 
 ```sh
 cd terraform
 
-# cloud {} ブロックが残っている状態で state を吸い出してバックアップする
+# Back up the state while the cloud {} block is still in place
 git switch main
 terraform login
 terraform init
 terraform state pull > /tmp/kagoole-twitter.tfstate
 
-# tfe provider ごと廃止するため、tfe_variable を state から外す
+# The tfe provider is going away, so drop tfe_variable from the state
 for r in enable_gcp_provider_auth tfc_gcp_project_number tfc_gcp_workload_pool_id \
          tfc_gcp_workload_provider_id tfc_gcp_service_account_email; do
   terraform state rm "tfe_variable.$r"
 done
 
-# GCS backend に切り替えた状態で state を移行する
-git switch <このブランチ>
+# Migrate the state with the GCS backend in place
+git switch <this branch>
 terraform init -migrate-state
 terraform state list
 ```
 
-移行後、HCP Terraform の workspace は削除します。**この workspace はこのリポジトリと VCS 連携しているため、削除するまで PR に失敗した `Terraform Cloud` チェックが出続けます。**
+Delete the HCP Terraform workspace afterwards. **It is connected to this
+repository over VCS, so a failing `Terraform Cloud` check keeps appearing on
+every pull request until the workspace is gone.**
 
-初回 apply では、TFC 用に作られていた以下のリソースが destroy されます。
+The first apply destroys the resources that existed only for HCP Terraform:
 
 - `google_iam_workload_identity_pool.tfc_pool` (`my-tfc-pool`)
 - `google_iam_workload_identity_pool_provider.tfc_provider` (`my-tfc-provider-id`)

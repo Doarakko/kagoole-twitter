@@ -17,7 +17,7 @@ jobs:
     name: terraform plan
     runs-on: ubuntu-latest
     concurrency:
-      # 連続 push した場合は実行途中の plan はキャンセルし、最後の plan のみ実行する
+      # Cancel in-flight plans on consecutive pushes and keep only the last one
       group: terraform-plan-${{ github.head_ref }}
       cancel-in-progress: true
     defaults:
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      # WIF によるキーレス認証
+      # Keyless authentication via Workload Identity Federation
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:

@@ -70,12 +70,13 @@ resource "google_project_iam_member" "admin_account_iam" {
   member   = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# terraform を GitHub Actions から実行するための service account
+# A service account for running terraform from GitHub Actions.
 #
-# 以下 3 つは CI 自身の認証基盤であり、消えると CI がロックアウトされて
-# ローカル apply でしか復旧できない。そのため prevent_destroy で保護する。
-# ただしこれはリソースブロックごと削除された場合には効かない
-# (lifecycle の設定は state ではなく config 側にあるため)。
+# The three resources below are the authentication basis of the CI itself.
+# If they are removed, the CI locks itself out and can only be recovered by a
+# local apply, so they are guarded with prevent_destroy. Note that this does
+# not help when the resource block itself is deleted, because the lifecycle
+# setting lives in the config rather than in the state.
 resource "google_service_account" "terraform_github_actions" {
   project      = var.gcp_project_id
   account_id   = "terraform-github-actions"
@@ -86,7 +87,7 @@ resource "google_service_account" "terraform_github_actions" {
   }
 }
 
-# 全 infra を apply するため owner を付与する
+# Grant owner because this service account applies the whole infrastructure.
 resource "google_project_iam_member" "terraform_github_actions" {
   project = var.gcp_project_id
   role    = "roles/owner"
@@ -97,7 +98,7 @@ resource "google_project_iam_member" "terraform_github_actions" {
   }
 }
 
-# このリポジトリの workflow だけが引き受けられる
+# Only workflows in this repository can impersonate the service account.
 resource "google_service_account_iam_member" "terraform_github_actions" {
   service_account_id = google_service_account.terraform_github_actions.name
   role               = "roles/iam.workloadIdentityUser"
