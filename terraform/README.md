@@ -67,7 +67,11 @@ gcloud storage buckets update gs://kagoole-379522-tfstate --versioning
 
 ### 2. Run the first apply
 
+The GCS backend reads Application Default Credentials, which `gcloud auth
+login` alone does not create.
+
 ```sh
+gcloud auth login
 gcloud auth application-default login
 cd terraform
 terraform init
@@ -84,7 +88,22 @@ binding, and the workload identity binding, after which CI can authenticate.
 gcloud iam service-accounts describe \
   terraform-github-actions@kagoole-379522.iam.gserviceaccount.com \
   --project=kagoole-379522
+
+gcloud iam service-accounts get-iam-policy \
+  terraform-github-actions@kagoole-379522.iam.gserviceaccount.com \
+  --project=kagoole-379522
 ```
+
+The policy should carry `roles/iam.workloadIdentityUser` for
+`principalSet://.../attribute.repository/Doarakko/kagoole-twitter`.
+
+Then push a commit and confirm the `terraform plan` workflow goes green.
+
+**Wait a few minutes before running CI.** The workload identity binding takes
+time to propagate, and a run started immediately after the apply fails with
+`Permission 'iam.serviceAccounts.getAccessToken' denied` even though the policy
+above is already correct. Re-running the job after a few minutes is enough; do
+not start changing the configuration.
 
 ## Notes
 
@@ -106,9 +125,12 @@ The backend used to be HCP Terraform (organization `Doarakko`, workspace
 `kagoole-twitter`). Once the migration is complete, this section can be
 deleted.
 
+Terraform cannot migrate off HCP Terraform on its own. Both `terraform init`
+and `terraform init -migrate-state` refuse the move, so the state has to be
+carried across by hand with `state pull` and `state push`.
+
 No separate backup is needed along the way. HCP Terraform keeps every state
-version, and the migration copies rather than moves, so the source state stays
-intact until the workspace is deleted.
+version, and the pulled file doubles as one until the workspace is deleted.
 
 The workspace pins its Terraform version. If it is older than the version in
 `.terraform-version`, state writes are rejected with `Incompatible Terraform
@@ -140,16 +162,32 @@ terraform state rm \
   data.tfe_organization.organization \
   data.tfe_workspace.workspace
 
+# Pull the state out. Keep this file until CI is green; it is the only copy
+# that survives deleting the workspace.
+terraform state pull > ~/kagoole-tfstate.json
+
 # init on main generates an untracked .terraform.lock.hcl, and the branch
 # tracks that path, so the switch below fails unless it is removed first
 rm .terraform.lock.hcl
+rm -rf .terraform
 
-# Migrate the state with the GCS backend in place. Note that -migrate-state
-# is rejected here: it only covers backend-to-backend moves, and migrating off
-# HCP Terraform is driven by interactive prompts on a plain init instead.
+# Push the state into the empty GCS backend
 git switch <this branch>
 terraform init
+terraform state push ~/kagoole-tfstate.json
 terraform state list   # seven fewer entries than before the state rm
+```
+
+`grep -c '"mode"'` on the pulled file counts resource blocks, not instances, so
+it will not match `terraform state list`. Two resources use `for_each`. Count
+instances instead:
+
+```sh
+python3 -c "
+import json, os
+d = json.load(open(os.path.expanduser('~/kagoole-tfstate.json')))
+print(sum(len(r['instances']) for r in d['resources']))
+"
 ```
 
 Delete the HCP Terraform workspace once CI is green. **It is connected to this
