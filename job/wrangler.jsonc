@@ -1,0 +1,24 @@
+{
+  "name": "kagoole-twitter",
+  "main": "src/entry.py",
+  "compatibility_date": "2026-09-30",
+  // Required while Python Workers are in open beta.
+  "compatibility_flags": ["python_workers"],
+
+  // There is no fetch handler, so do not publish a workers.dev URL.
+  "workers_dev": false,
+
+  // Replaces Cloud Logging: print() output lands in Workers Logs, and
+  // `wrangler tail` is the live equivalent of `gcloud logging tail`.
+  "observability": {
+    "enabled": true
+  },
+
+  "triggers": {
+    // Cron Triggers always run in UTC; there is no time_zone field. The old
+    // Cloud Scheduler job was set to Asia/Tokyo, but "*/30 * * * *" fires at
+    // :00 and :30 in every timezone, so the schedule is unchanged.
+    // If you change this, change LOOKBACK_MINUTES in src/entry.py too.
+    "crons": ["*/30 * * * *"]
+  }
+}

@@ -9,7 +9,9 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: "pip"
+  # uv, not pip: every dependency lives in [dependency-groups] and in
+  # uv.lock, neither of which the pip ecosystem reads.
+  - package-ecosystem: "uv"
     directory: "/job"
     schedule:
       interval: "monthly"
@@ -17,12 +19,3 @@ updates:
       patch:
         update-types:
           - "patch"
-
-  - package-ecosystem: "terraform"
-    directory: "/terraform"
-    schedule:
-      interval: "monthly"
-    groups:
-      all-providers:
-        patterns:
-          - "*"

@@ -10,37 +10,35 @@ on:
 
 permissions:
   contents: 'read'
-  id-token: 'write'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: job
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - id: 'auth'
-        uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # v2.1.13
+
+      # pywrangler shells out to wrangler, which requires Node 22 or newer.
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/631578640507/locations/global/workloadIdentityPools/gh-oidc-pool/providers/gh-oidc-provider'
-          service_account: 'github-actions@kagoole-379522.iam.gserviceaccount.com'
-      - name: Login to Artifact Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+          node-version: '22'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          registry: asia-northeast1-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-      - name: Build and push
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
-        with:
-          context: "{{defaultContext}}:job"
-          push: true
-          tags: asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/twitter:latest
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a' # v2.1.2
-      - name: deploy job
-        run: |
-          gcloud components install beta
-          gcloud beta run jobs deploy kagoole-twitter --image asia-northeast1-docker.pkg.dev/kagoole-379522/kagoole/twitter --region asia-northeast1
+          enable-cache: true
+
+      # pywrangler, not wrangler: the `workers` module is not built into the
+      # runtime at this compatibility date. It comes from workers-runtime-sdk,
+      # which only pywrangler vendors into the bundle. Deploying with plain
+      # wrangler produces a Worker that fails at import with
+      # "ModuleNotFoundError: No module named 'workers'".
+      - name: Deploy
+        run: uv run --frozen pywrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

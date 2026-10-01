@@ -1,22 +1,31 @@
-[tool.poetry]
-name = "job"
+[project]
+name = "kagoole-twitter"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
-readme = "README.md"
+description = "Tweet when a new Kaggle competition is launched."
+# Matches the Python that Pyodide provides at this compatibility date.
+requires-python = ">=3.14"
+# Intentionally empty: the Worker uses only the standard library plus the
+# `workers` module. Note that `workers` still has to be vendored into the
+# bundle, which is why deploys run through pywrangler rather than wrangler.
+dependencies = []
 
-[tool.poetry.dependencies]
-python = "^3.11"
-kaggle = "^1.6.17"
-python-dotenv = "^1.0.1"
-tweepy = "^4.14.0"
-google-crc32c = "^1.5.0"
-google-cloud-secret-manager = "^2.20.0"
+[dependency-groups]
+dev = [
+    "workers-py",
+    "workers-runtime-sdk",
+    "black>=24",
+    "pytest>=8",
+]
 
+[tool.uv]
+# Nothing to build or install: this is a Worker, not a package.
+package = false
 
-[tool.poetry.group.dev.dependencies]
-black = "^24.10.0"
+[tool.pytest.ini_options]
+# Mirrors the Worker's import path. Wrangler flattens the directory holding
+# `main` onto sys.path, so entry.py says `from kaggle import ...`.
+pythonpath = ["src"]
+testpaths = ["tests"]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.black]
+target-version = ["py314"]
