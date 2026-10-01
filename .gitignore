@@ -1,10 +1,17 @@
-.env
 .idea
 .vscode
 .DS_Store
 
 .venv
+__pycache__/
+.pytest_cache/
 
-.terraform/
-*.tfstate
-*.tfstate.*
+# wrangler
+# Vendored by pywrangler at build time, like node_modules. pylock.toml,
+# which pins what goes in here, is committed.
+python_modules/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/
+node_modules/
